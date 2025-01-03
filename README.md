@@ -18,3 +18,11 @@ conda create -n knowledge-base-construction python=3.12.1
 conda activate knowledge-base-construction
 pip install -r dataset/requirements.txt
 ```
+
+## Performance
+
+Test a prediction file against the ground truth:
+
+```bash
+python dataset/evaluate.py -g dataset/data/train.jsonl -p predictions.jsonl
+```
