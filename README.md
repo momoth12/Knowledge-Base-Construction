@@ -19,6 +19,33 @@ conda activate knowledge-base-construction
 pip install -r dataset/requirements.txt
 ```
 
+## Overview
+
+Structure of the `kbc` folder.
+
+```
+├── dataset.py  # Dataset loader
+│
+└── model.py    # LLM wrappers
+```
+
+## Access Models
+
+You must first ask for access to MistralAI and LLama models on huggingface:
+
+- https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct
+- https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
+
+Then generate a huggingface token with read access to gated models:
+
+- https://huggingface.co/settings/tokens
+
+Last, login with the token using huggingface-cli:
+
+```bash
+huggingface-cli login
+```
+
 ## Performance
 
 Test a prediction file against the ground truth:

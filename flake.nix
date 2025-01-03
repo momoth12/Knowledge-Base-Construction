@@ -54,6 +54,7 @@
                 pyyaml
                 accelerate
                 bitsandbytes
+                sentencepiece
               ]
             ))
           ];
