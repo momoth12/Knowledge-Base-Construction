@@ -1,0 +1,7 @@
+[tool.black]
+line-length = 100
+force-exclude = "dataset"
+
+[tool.isort]
+profile = "black"  # Optional: align with Black's formatting style
+skip = ["dataset"]

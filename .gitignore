@@ -1,3 +1,5 @@
 # Direnv
-.envrc
 /.direnv
+
+# Pycache
+__pycache__/
