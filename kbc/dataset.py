@@ -21,7 +21,7 @@ class Sample(TypedDict):
 dataset_paths = {
     "train": "dataset/data/train.jsonl",
     "test": "dataset/data/test.jsonl",
-    "valid": "dataset/data/valid.jsonl"
+    "valid": "dataset/data/val.jsonl"
 }
 
 def dataset_iterator(dataset: Literal["train", "test", "valid"]) -> Generator[Sample, None, None]:

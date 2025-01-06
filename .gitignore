@@ -1,5 +1,7 @@
 # Direnv
 /.direnv
+results/
+wandb/
 
 # Pycache
 __pycache__/
