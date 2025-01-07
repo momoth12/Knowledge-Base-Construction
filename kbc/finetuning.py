@@ -142,8 +142,9 @@ def finetune(
             save_strategy="steps",  # Save the model checkpoint every logging step
             save_steps=10,  # Save checkpoints every 10 steps
             eval_strategy="steps",  # Evaluate the model every logging step
-            eval_steps=20,  # Evaluate and save checkpoints every 10 steps
+            eval_steps=30,  # Evaluate and save checkpoints every 10 steps
             do_eval=True,  # Perform evaluation at the end of training
+            report_to="none",
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(lm_model.tokenizer, mlm=False),
     )

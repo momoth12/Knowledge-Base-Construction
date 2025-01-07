@@ -21,27 +21,29 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.bfloat16,
 )
 
-model = LLM("mistralai/Mistral-7B-Instruct-v0.1", quantization_config=bnb_config)
+model = LLM("meta-llama/Llama-3.2-1B", quantization_config=bnb_config)
 
 
 mode = "train"  # "train" or "eval"
-weights_path = "./results/outputs/2025-01-06_13-38-47/checkpoint-130"
+weights_path = "./results/outputs/2025-01-06_15-49-09/checkpoint-90"
 
 if mode == "train":
     # Fine-tune the model on the dataset
-    model = finetune(train_it, eval_it, model, checkpoint_path=weights_path)
+    model = finetune(train_it, eval_it, model, checkpoint_path=None)
 
 elif mode == "eval":
     # Load LoRA weights
-    model.model = PeftModel.from_pretrained(model.model, weights_path)
+    # model.model = PeftModel.from_pretrained(model.model, weights_path)
 
     sample = next(eval_it)
 
     # Evaluate the model on the dataset
     prompt, tokenized_prompt = generate_and_tokenize_eval_prompt(data_point=sample, model=model)
 
+    print(prompt)
+
     # Run the model on the prompt
-    output = model.generate(prompt)
+    output = model.generate(prompt, max_new_tokens=200)
 
     print("##### Example prompt:")
 
