@@ -5,7 +5,8 @@ from kbc.wikidata.types import WikidataEntity
 
 
 def disambiguate_baseline(entries: list[WikidataEntity]) -> WikidataEntity:
-    """Disambiguate Wikidata entities by returning the first entity."""
+    """Disambiguate Wikidata entities by returning the first entity.
+    Accuracy on the train dataset: 0.515%"""
 
     return entries[0]
 
@@ -20,7 +21,7 @@ def disambiguate_keywords(entries: list[WikidataEntity], keywords: list[str]) ->
     This way, we can check for the presence of keywords with priority.
     """
 
-    entriesWithScores: list[tuple[WikidataEntity, int]] = []
+    entries_with_scores: list[tuple[WikidataEntity, int]] = []
     k = len(keywords)
 
     for entry in entries:
@@ -29,12 +30,12 @@ def disambiguate_keywords(entries: list[WikidataEntity], keywords: list[str]) ->
             words = entry["description"].split()  # Avoid substring matching
             if keyword in words:
                 bitmask += 1 << (k - i - 1)
-        entriesWithScores.append((entry, bitmask))
+        entries_with_scores.append((entry, bitmask))
 
     # Sort by score, higher is better (check keyword presence with priority)
-    entriesWithScores.sort(key=lambda x: x[1], reverse=True)
+    entries_with_scores.sort(key=lambda x: x[1], reverse=True)
 
-    return entriesWithScores[0][0]
+    return entries_with_scores[0][0]
 
 
 def disambiguate_lm(entries: list[WikidataEntity], sample: Sample) -> WikidataEntity:

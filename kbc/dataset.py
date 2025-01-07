@@ -34,3 +34,14 @@ def dataset_iterator(dataset: Literal["train", "test", "valid"]) -> Generator[Sa
             yield json.loads(line)
 
     
+
+def object_entities_iterator(dataset:  Literal["train", "test", "valid"]):
+    """Transform a dataset generator into a generator of object entities.
+    Each yield returns the entity name and the entity id.
+    This is useful for testing Wikidata disambiguation."""
+
+    generator = dataset_iterator(dataset)
+
+    for entry in generator:
+        for name, id in zip(entry["ObjectEntities"], entry["ObjectEntitiesID"]):
+            yield name, id
