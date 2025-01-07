@@ -53,3 +53,28 @@ Test a prediction file against the ground truth:
 ```bash
 python dataset/evaluate.py -g dataset/data/train.jsonl -p predictions.jsonl
 ```
+
+## Dataset
+
+There are 5 relations in the dataset:
+
+| ID                             | Constraints                 | Description                                                      |
+| ------------------------------ | --------------------------- | ---------------------------------------------------------------- |
+| _countryLandBordersCountry_    | `list`, can be empty        | Which other countries share a land border with the given country |
+| _personHasCityOfDeath_         | Single value, can be `null` | In which city the given person died                              |
+| _seriesHasNumberOfEpisodes_    | `int`                       | How many episodes the TV series has                              |
+| _awardWonBy_                   | `list`, can be empty        | What people won the given award                                  |
+| _companyTradesAtStockExchange_ | `list`, can be empty        | In which stock exchange the given company trades                 |
+
+The dataset is divided into 3. Both the training and validation datasets have the answers:
+| Dataset | Questions |
+| ---------- | --------- |
+| Training | 377 |
+| Validation | 378 |
+| Testing | 378 |
+
+### Data Repartition
+
+![Dataset Balance](./images/dataset_balance.png)
+
+![Answers Per Relation](./images/answers_per_relation.png)

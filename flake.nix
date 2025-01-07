@@ -38,6 +38,13 @@
             # For Numpy, Torch, etc.
             stdenv.cc.cc
             zlib
+
+            # Plotting with GTK backend
+            gtk3
+            gobject-introspection
+
+            # GTK SVG image support
+            librsvg
           ];
 
           packages = with pkgs; [
@@ -55,9 +62,13 @@
                 accelerate
                 bitsandbytes
                 sentencepiece
+                matplotlib
+                pygobject3
               ]
             ))
           ];
+
+          MPLBACKEND = "GTK3Agg";
         }
       );
     };

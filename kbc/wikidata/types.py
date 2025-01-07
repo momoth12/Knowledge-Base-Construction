@@ -1,6 +1,6 @@
 """Wikidata API types."""
 
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 
 class SearchInfo(TypedDict):
@@ -42,9 +42,9 @@ class WikidataEntity(TypedDict):
     url: str  # Url to the entity without the "http:" part
     display: EntityDisplay
     label: str  # Actual entity name
-    description: str  # Entity description
+    description: NotRequired[str]  # Entity description
     match: SearchMatch
-    aliases: list[str] | None  # possible aliases for the entity
+    aliases: NotRequired[list[str]]  # possible aliases for the entity
 
 
 # This typed dict must be declared the functional way
