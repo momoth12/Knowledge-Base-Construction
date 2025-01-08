@@ -38,9 +38,15 @@ def get_wikidata_entities(ids: list[str]) -> WikidataGetResponse:
     for qid, entity in data["entities"].items():
         clean_data["entities"][qid] = {
             "id": qid,
-            "label": entity["labels"]["en"]["value"],
             "description": entity["descriptions"]["en"]["value"],
-            "aliases": [alias["value"] for alias in entity["aliases"]["en"]],
         }
+
+        if "aliases" in entity and "en" in entity["aliases"]:
+            clean_data["entities"][qid]["aliases"] = [
+                alias["value"] for alias in entity["aliases"]["en"]
+            ]
+
+        if "labels" in entity and "en" in entity["labels"]:
+            clean_data["entities"][qid]["label"] = entity["labels"]["en"]["value"]
 
     return clean_data

@@ -52,9 +52,9 @@ class WikidataGetEntity(TypedDict):
     We simplify it because the get API returns a lot of information we don't need."""
 
     id: str
-    label: str
+    label: NotRequired[str]
     description: str
-    aliases: list[str]
+    aliases: NotRequired[list[str]]
 
 
 # This typed dict must be declared the functional way
