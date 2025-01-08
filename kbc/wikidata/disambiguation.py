@@ -13,7 +13,11 @@ def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearch
     - countryLandBordersCountry: 0.975%
     - personHasCityOfDeath: 0.906%
     - companyTradesAtStockExchange: 0.86%
-    - awardWonBy: 0.389%
+    - awardWonBy: 0.682%
+
+    Accuracy with helpers:
+    Filtering out solutions that contain "article" in their description for "awardWonBy":
+    - awardWonBy: no change!
     """
 
     return entries[0]
@@ -44,6 +48,7 @@ def disambiguate_keywords(
         bitmask = 0
         for i, keyword in enumerate(keywords):
             if "description" not in entry:
+                entries_with_scores.append((entry, bitmask))
                 continue
             words = entry["description"].split()  # Avoid substring matching
             if keyword in words:
@@ -115,6 +120,7 @@ def filter_blacklist(
 
     for entry in entries:
         if "description" not in entry:
+            out.append(entry)
             continue
 
         words = entry["description"].split()
