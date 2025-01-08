@@ -29,8 +29,20 @@
             inherit system;
             config = {
               allowUnfree = true;
-              cudaSupport = false;
+              cudaSupport = true;
             };
+            overlays = [
+              (final: prev: {
+                python312 = prev.python312.override {
+                  packageOverrides = finalPy: prevPy: {
+                    # Fix sentence-transformers
+                    sentence-transformers = prevPy.sentence-transformers.overridePythonAttrs (old: {
+                      dependencies = old.dependencies ++ [ finalPy.pillow ];
+                    });
+                  };
+                };
+              })
+            ];
           };
         in
         pkgs.mkShell {
@@ -60,10 +72,12 @@
                 loguru
                 pyyaml
                 accelerate
+
                 bitsandbytes
                 sentencepiece
                 matplotlib
                 pygobject3
+                sentence-transformers
               ]
             ))
           ];
