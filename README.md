@@ -54,6 +54,22 @@ Test a prediction file against the ground truth:
 python dataset/evaluate.py -g dataset/data/train.jsonl -p predictions.jsonl
 ```
 
+### Disambiguation
+
+There are currently 3 disambiguation methods:
+
+- `baseline`
+- `keywords`
+- `lm`
+
+To test a disambiguation method, run the following code:
+
+```bash
+python test_disambiguation.py <method> <relation>
+```
+
+Run `python test_disambiguation.py --help` for more options.
+
 ## Dataset
 
 There are 5 relations in the dataset:

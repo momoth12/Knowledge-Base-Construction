@@ -89,7 +89,7 @@ def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> Wiki
 
     # Compute the similarity between the question and the entries
     similarities = torch.cosine_similarity(question_embedding, embeddings).cpu().numpy()
-    print(similarities)
+    print(similarities)  # DEBUG: remove this
 
     # Return the entry with the highest similarity
     best_index = similarities.argmax()
