@@ -10,14 +10,10 @@ from kbc.wikidata.types import WikidataSearchEntity
 def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearchEntity:
     """Disambiguate Wikidata entities by returning the first entity.
     Accuracy on the train dataset:
-    - countryLandBordersCountry: 0.975%
-    - personHasCityOfDeath: 0.906%
-    - companyTradesAtStockExchange: 0.86%
-    - awardWonBy: 0.682%
-
-    Accuracy with helpers:
-    Filtering out solutions that contain "article" in their description for "awardWonBy":
-    - awardWonBy: no change!
+    - countryLandBordersCountry: 97.5%
+    - personHasCityOfDeath: 94.2%
+    - companyTradesAtStockExchange: 100%
+    - awardWonBy: 96.4%
     """
 
     return entries[0]
@@ -33,12 +29,6 @@ def disambiguate_keywords(
     Keywords are searched for in entry descriptions.
     Each entry is attributed a bitmask where each bit represents the presence of a keyword, in order.
     This way, we can check for the presence of keywords with priority.
-
-    Accuracy on the train dataset with relation-specific keywords:
-    - countryLandBordersCountry & ["country"]: 0.97%
-    - personHasCityOfDeath & ["city"]: 0.925%
-    - companyTradesAtStockExchange & ["stock", "market"]: 0.835%
-    - "no useful keyword"
     """
 
     entries_with_scores: list[tuple[WikidataSearchEntity, int]] = []

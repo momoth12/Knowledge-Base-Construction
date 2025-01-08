@@ -36,21 +36,6 @@ def dataset_iterator(dataset: Literal["train", "test", "valid"]) -> Generator[Sa
 
     
 
-def object_entities_iterator(dataset:  Literal["train", "test", "valid"], only: Relation | None = None):
-    """Transform a dataset generator into a generator of object entities.
-    Each yield returns the entity name and the entity id.
-    This is useful for testing Wikidata disambiguation.
-
-    If only is not None, the generator only returns entities with the specified relation.
-    """
-
-    generator = dataset_iterator(dataset)
-
-    for entry in generator:
-        if only is not None and entry["Relation"] != only:
-            continue
-        for name, id in zip(entry["ObjectEntities"], entry["ObjectEntitiesID"]):
-            yield name, id
 
 ###################################################################################################
 #                                    QUESTION PROMPT TEMPLATES                                    #
