@@ -55,6 +55,7 @@ class WikidataGetEntity(TypedDict):
     label: NotRequired[str]
     description: str
     aliases: NotRequired[list[str]]
+    claims: dict[str, list[dict]]
 
 
 # This typed dict must be declared the functional way

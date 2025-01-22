@@ -1,10 +1,12 @@
 """Wikidata disambiguation methods."""
 
+import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 
 from kbc.dataset import Sample, generate_question_prompt
-from kbc.wikidata.types import WikidataSearchEntity
+from kbc.wikidata.search import get_wikidata_entities
+from kbc.wikidata.types import WikidataGetEntity, WikidataSearchEntity
 
 
 def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearchEntity:
@@ -73,7 +75,9 @@ def _get_embedding(string: str | list[str]) -> torch.Tensor:
         return model.encode(string, convert_to_tensor=True).to(_device)
 
 
-def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> WikidataSearchEntity:
+def disambiguate_lm(
+    entries: list[WikidataSearchEntity], sample: Sample
+) -> tuple[WikidataSearchEntity, np.ndarray]:
     """Disambiguate Wikidata entities using a language model to compute similarities
     between the question and returned entries."""
 
@@ -89,11 +93,10 @@ def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> Wiki
 
     # Compute the similarity between the question and the entries
     similarities = torch.cosine_similarity(question_embedding, embeddings).cpu().numpy()
-    print(similarities)  # DEBUG: remove this
 
     # Return the entry with the highest similarity
     best_index = similarities.argmax()
-    return entries[best_index]
+    return entries[best_index], similarities
 
 
 ###################################################################################################
@@ -124,3 +127,37 @@ def filter_blacklist(
             out.append(entry)
 
     return out
+
+
+def filter_humans(entries: list[WikidataSearchEntity]) -> list[WikidataSearchEntity]:
+    """Filter out Wikidata entities that are not humans."""
+
+    out = []
+
+    entry_lookup = {entry["id"]: entry for entry in entries}
+    ids = [entry["id"] for entry in entries]
+
+    entities = get_wikidata_entities(ids)
+
+    for id, entity in entities["entities"].items():
+        if is_human(entity):
+            out.append(entry_lookup[id])
+
+    return out
+
+
+def is_human(entity: WikidataGetEntity) -> bool:
+    """Check if a Wikidata entity has the Q5 "human" P31 "instanceof" property."""
+
+    claims = entity["claims"]
+
+    if "P31" not in claims:
+        return False
+
+    p31_claims = claims["P31"]
+
+    for claim in p31_claims:
+        if claim["mainsnak"]["datavalue"]["value"]["id"] == "Q5":
+            return True
+
+    return False

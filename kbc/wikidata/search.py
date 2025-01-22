@@ -49,4 +49,7 @@ def get_wikidata_entities(ids: list[str]) -> WikidataGetResponse:
         if "labels" in entity and "en" in entity["labels"]:
             clean_data["entities"][qid]["label"] = entity["labels"]["en"]["value"]
 
+        if "claims" in entity:
+            clean_data["entities"][qid]["claims"] = entity["claims"]
+
     return clean_data
