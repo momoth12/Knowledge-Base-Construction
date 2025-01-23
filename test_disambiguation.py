@@ -4,12 +4,13 @@ import argparse
 
 from tqdm import tqdm
 
-from kbc.dataset import dataset_iterator
+from kbc.dataset import Relation, dataset_iterator
 from kbc.wikidata.disambiguation import (
     disambiguate_baseline,
     disambiguate_keywords,
     disambiguate_lm,
     filter_blacklist,
+    filter_humans,
 )
 from kbc.wikidata.search import search_wikidata
 from kbc.wikidata.types import WikidataSearchEntity
@@ -57,6 +58,19 @@ keyword_blacklist = {
     "companyTradesAtStockExchange": [],
 }
 
+
+def filter_entries(
+    entries: list[WikidataSearchEntity], relation: Relation
+) -> list[WikidataSearchEntity]:
+    """Use the most appropriate filter kind for the relation."""
+
+    match relation:
+        case "awardWonBy":
+            return filter_humans(entries)
+        case _:
+            return filter_blacklist(entries, keyword_blacklist[relation])
+
+
 if __name__ == "__main__":
     # Parse arguments
     args = parser.parse_args()
@@ -84,21 +98,26 @@ if __name__ == "__main__":
             if len(result["search"]) == 0:
                 continue
 
-            result["search"] = filter_blacklist(result["search"], keyword_blacklist[args.relation])
+            result["search"] = filter_entries(result["search"], args.relation)
 
             chosen: WikidataSearchEntity = None  # type: ignore
-            match args.method:
-                case "baseline":
-                    chosen = disambiguate_baseline(result["search"])
-                case "keywords":
-                    chosen = disambiguate_keywords(
-                        result["search"], keyword_whitelist[args.relation]
-                    )
-                case "lm":
-                    chosen = disambiguate_lm(result["search"], entry)
 
-            if chosen["id"] in answers:
-                correct += 1
+            try:
+                match args.method:
+                    case "baseline":
+                        chosen = disambiguate_baseline(result["search"])
+                    case "keywords":
+                        chosen = disambiguate_keywords(
+                            result["search"], keyword_whitelist[args.relation]
+                        )
+                    case "lm":
+                        chosen = disambiguate_lm(result["search"], entry)
+
+                if chosen["id"] in answers:
+                    correct += 1
+            except:
+                # Disambiguation failed (it removed all the options), we count this matching as failed
+                pass
 
             progress_bar.update(1)
 

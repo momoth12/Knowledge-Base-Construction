@@ -1,12 +1,71 @@
 """Wikidata disambiguation methods."""
 
-import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 
 from kbc.dataset import Sample, generate_question_prompt
-from kbc.wikidata.search import get_wikidata_entities
+from kbc.wikidata.search import get_wikidata_entities, search_wikidata
 from kbc.wikidata.types import WikidataGetEntity, WikidataSearchEntity
+
+###################################################################################################
+#                                   BEST DISAMBIGUATION FUNCTIONS                                 #
+###################################################################################################
+
+_award_qid_cache: dict[str, str] = {}
+
+
+def disambiguate_award_won_by(
+    entries: list[WikidataSearchEntity], award_name: str
+) -> WikidataSearchEntity:
+    """Best awardWonBy disambiguation method.
+
+    1. Find the QID of the award for the given relation using a baseline method.
+    2. Get the details about every entry in the given list
+    3. Return the first entry that has the award QID in its P166 (awards received) claims.
+    4. If none is found, return the first entry (baseline).
+
+    Accuracy: 98.57%
+
+    Remaining bad choices:
+    - Q26958641 in the case of name: Brian Jones
+    - Q112383418 in the case of name: Kathryn VanSpanckeren
+    - Q6006626 in the case of name: Matías Fernandez
+    - Q866 in the case of name: You
+    - Q115236110 in the case of name: Edward Lisovskii
+    - Q174233 in the case of name: Nursultan Nazarbayev
+    - Q386864 in the case of name: Heydar Aliyev
+    """
+
+    if award_name in _award_qid_cache:
+        award_qid = _award_qid_cache[award_name]
+    else:
+        results = search_wikidata(award_name)
+        award_qid = results["search"][0]["id"]
+        _award_qid_cache[award_name] = award_qid
+
+    full_entries = get_wikidata_entities([entry["id"] for entry in entries])
+
+    for entry in entries:
+        id = entry["id"]
+
+        if not is_human(full_entries[id]):
+            continue
+
+        data = full_entries[id]
+        awards_won = data["claims"].get("P166", [])
+
+        for award in awards_won:
+            if award["mainsnak"]["datavalue"]["value"]["id"] == award_qid:
+                return entry
+
+    # By default, return the first entry
+    # Some expected entries are not humans
+    return entries[0]
+
+
+###################################################################################################
+#                                  BASIC DISAMBIGUATION FUNCTIONS                                 #
+###################################################################################################
 
 
 def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearchEntity:
@@ -15,7 +74,7 @@ def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearch
     - countryLandBordersCountry: 97.5%
     - personHasCityOfDeath: 94.2%
     - companyTradesAtStockExchange: 100%
-    - awardWonBy: 96.4%
+    - awardWonBy: 96.4% -> 96,13% with filter_humans
     """
 
     return entries[0]
@@ -75,11 +134,15 @@ def _get_embedding(string: str | list[str]) -> torch.Tensor:
         return model.encode(string, convert_to_tensor=True).to(_device)
 
 
-def disambiguate_lm(
-    entries: list[WikidataSearchEntity], sample: Sample
-) -> tuple[WikidataSearchEntity, np.ndarray]:
+def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> WikidataSearchEntity:
     """Disambiguate Wikidata entities using a language model to compute similarities
-    between the question and returned entries."""
+    between the question and returned entries.
+    Accuracy on the train dataset:
+    - awardWonBy: 90.97% with filter_humans
+    """
+
+    # TODO : idem, depending on the relation...
+    # for awardWonBy, there is a relation P166 which is awards received. See the content when searching
 
     # Prepare the texts to be embedded
     texts = [
@@ -96,7 +159,7 @@ def disambiguate_lm(
 
     # Return the entry with the highest similarity
     best_index = similarities.argmax()
-    return entries[best_index], similarities
+    return entries[best_index]
 
 
 ###################################################################################################
@@ -139,7 +202,7 @@ def filter_humans(entries: list[WikidataSearchEntity]) -> list[WikidataSearchEnt
 
     entities = get_wikidata_entities(ids)
 
-    for id, entity in entities["entities"].items():
+    for id, entity in entities.items():
         if is_human(entity):
             out.append(entry_lookup[id])
 
