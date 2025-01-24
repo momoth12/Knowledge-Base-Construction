@@ -3,3 +3,9 @@
 
 # Pycache
 __pycache__/
+
+# Wikidata cache
+/cache/get/*
+/cache/search/*
+!/cache/get/.gitkeep
+!/cache/search/.gitkeep

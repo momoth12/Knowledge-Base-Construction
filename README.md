@@ -24,6 +24,8 @@ pip install -r dataset/requirements.txt
 Structure of the `kbc` folder.
 
 ```
+├── wikidata/   # Wikidata search and disambiguation utilities
+│
 ├── dataset.py  # Dataset loader
 │
 └── model.py    # LLM wrappers
@@ -52,4 +54,48 @@ Test a prediction file against the ground truth:
 
 ```bash
 python dataset/evaluate.py -g dataset/data/train.jsonl -p predictions.jsonl
+```
+
+## Dataset
+
+There are 5 relations in the dataset:
+
+| ID                             | Constraints                 | Description                                                      |
+| ------------------------------ | --------------------------- | ---------------------------------------------------------------- |
+| _countryLandBordersCountry_    | `list`, can be empty        | Which other countries share a land border with the given country |
+| _personHasCityOfDeath_         | Single value, can be `null` | In which city the given person died                              |
+| _seriesHasNumberOfEpisodes_    | `int`                       | How many episodes the TV series has                              |
+| _awardWonBy_                   | `list`, can be empty        | What people won the given award                                  |
+| _companyTradesAtStockExchange_ | `list`, can be empty        | In which stock exchange the given company trades                 |
+
+The dataset is divided into 3. Both the training and validation datasets have the answers:
+| Dataset | Questions |
+| ---------- | --------- |
+| Training | 377 |
+| Validation | 378 |
+| Testing | 378 |
+
+### Data Repartition
+
+![Dataset Balance](./images/dataset_balance.png)
+
+![Answers Per Relation](./images/answers_per_relation.png)
+
+## Results
+
+### Disambiguation
+
+Note that the training dataset has been fixed (incorrect entries or rows have been altered or removed).
+
+| Relation                       | Best Method Accuracy |
+| ------------------------------ | -------------------- |
+| `awardWonBy`                   | 100%                 |
+| `countryLandBordersCountry`    | 100%                 |
+| `companyTradesAtStockExchange` | 100%                 |
+| `personHasCityOfDeath`         | 98.04%               |
+
+You can run these tests with the following commands:
+
+```bash
+python test_disambiguation.py <relation>
 ```

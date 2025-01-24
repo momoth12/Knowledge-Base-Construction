@@ -1,0 +1,4 @@
+Wikidata
+numpy
+torch
+sentence-transformers
