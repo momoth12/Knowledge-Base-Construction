@@ -24,6 +24,8 @@ pip install -r dataset/requirements.txt
 Structure of the `kbc` folder.
 
 ```
+├── wikidata/   # Wikidata search and disambiguation utilities
+│
 ├── dataset.py  # Dataset loader
 │
 └── model.py    # LLM wrappers
@@ -54,22 +56,6 @@ Test a prediction file against the ground truth:
 python dataset/evaluate.py -g dataset/data/train.jsonl -p predictions.jsonl
 ```
 
-### Disambiguation
-
-There are currently 3 disambiguation methods:
-
-- `baseline`
-- `keywords`
-- `lm`
-
-To test a disambiguation method, run the following code:
-
-```bash
-python test_disambiguation.py <method> <relation>
-```
-
-Run `python test_disambiguation.py --help` for more options.
-
 ## Dataset
 
 There are 5 relations in the dataset:
@@ -94,3 +80,22 @@ The dataset is divided into 3. Both the training and validation datasets have th
 ![Dataset Balance](./images/dataset_balance.png)
 
 ![Answers Per Relation](./images/answers_per_relation.png)
+
+## Results
+
+### Disambiguation
+
+Note that the training dataset has been fixed (incorrect entries or rows have been altered or removed).
+
+| Relation                       | Best Method Accuracy |
+| ------------------------------ | -------------------- |
+| `awardWonBy`                   | 100%                 |
+| `countryLandBordersCountry`    | 100%                 |
+| `companyTradesAtStockExchange` | 100%                 |
+| `personHasCityOfDeath`         | 98.04%               |
+
+You can run these tests with the following commands:
+
+```bash
+python test_disambiguation.py <relation>
+```

@@ -77,3 +77,26 @@ class WikidataGetResponse(TypedDict):
 
     entities: dict[str, WikidataGetEntity]
     success: Literal[1, 0]
+
+
+###################################################################################################
+#                                        UTILITY FUNCTIONS                                        #
+###################################################################################################
+
+
+def entity_instanceof(entity: WikidataGetEntity, qids: list[str]) -> bool:
+    """Check if an entity is an instance of any of the given Wikidata QIDs"""
+
+    claims = entity["claims"]
+
+    if "P31" not in claims:
+        return False
+
+    p31_claims = claims["P31"]
+
+    for claim in p31_claims:
+        id = claim["mainsnak"]["datavalue"]["value"]["id"]
+        if id in qids:
+            return True
+
+    return False

@@ -1,17 +1,55 @@
 """Wikidata disambiguation methods."""
 
+from typing import Callable
+
 import torch
 from sentence_transformers import SentenceTransformer
 
-from kbc.dataset import Sample, generate_question_prompt
+from kbc.dataset import Relation, Sample, generate_question_prompt
 from kbc.wikidata.search import get_wikidata_entities, search_wikidata
-from kbc.wikidata.types import WikidataGetEntity, WikidataSearchEntity
+from kbc.wikidata.types import (
+    WikidataGetEntity,
+    WikidataSearchEntity,
+    entity_instanceof,
+)
+
+
+def disambiguate(
+    entries: list[WikidataSearchEntity], relation: Relation, subject: str
+) -> WikidataSearchEntity:
+    """Disambiguate entries for a specific relation using the best disambiguation method available."""
+
+    match relation:
+        case "countryLandBordersCountry":
+            return disambiguate_country_land_borders_country(entries)
+        case "personHasCityOfDeath":
+            return disambiguate_city_of_death(entries)
+        case "awardWonBy":
+            return disambiguate_award_won_by(entries, subject)
+        case "companyTradesAtStockExchange":
+            return disambiguate_baseline(entries)
+        case _:
+            raise ValueError(f"Relation {relation} is not supported for disambiguation")
+
 
 ###################################################################################################
 #                                   BEST DISAMBIGUATION FUNCTIONS                                 #
 ###################################################################################################
 
-_award_qid_cache: dict[str, str] = {}
+
+def disambiguate_country_land_borders_country(
+    entries: list[WikidataSearchEntity],
+) -> WikidataSearchEntity:
+    """Best countryLandBordersCountry disambiguation method.
+    Accuracy on train dataset: 97.5%
+
+    1. Get the details about every entry in the given list
+    2. Return the first entry that is a country.
+
+    We assume country names are disambiguated enough, hence why we use a naive baseline method for found countries.
+    """
+
+    return first_match(entries, [is_country])
 
 
 def disambiguate_city_of_death(entries: list[WikidataSearchEntity]) -> WikidataSearchEntity:
@@ -27,20 +65,10 @@ def disambiguate_city_of_death(entries: list[WikidataSearchEntity]) -> WikidataS
     This could help disambiguate the lesser known Cambridge city, while avoiding having empty search results
     because of too strict search strings."""
 
-    full_entries = get_wikidata_entities([entry["id"] for entry in entries])
+    return first_match(entries, [is_city])
 
-    for entry in entries:
-        id = entry["id"]
 
-        if id not in full_entries:
-            continue
-
-        data = full_entries[id]
-
-        if is_city(data):
-            return entry
-
-    return entries[0]
+_award_qid_cache: dict[str, str] = {}
 
 
 def disambiguate_award_won_by(
@@ -62,30 +90,7 @@ def disambiguate_award_won_by(
         award_qid = results["search"][0]["id"]
         _award_qid_cache[award_name] = award_qid
 
-    full_entries = get_wikidata_entities([entry["id"] for entry in entries])
-
-    humans = []
-
-    for entry in entries:
-        id = entry["id"]
-
-        if not is_human(full_entries[id]):
-            continue
-        humans.append(entry)
-
-        data = full_entries[id]
-        awards_won = data["claims"].get("P166", [])
-
-        for award in awards_won:
-            if award["mainsnak"]["datavalue"]["value"]["id"] == award_qid:
-                return entry
-
-    if len(humans) > 0:
-        return humans[0]
-
-    # By default, return the first entry
-    # Some expected entries are not humans
-    return entries[0]
+    return first_match(entries, [is_human, make_has_award_predicate(award_qid)])
 
 
 ###################################################################################################
@@ -166,9 +171,6 @@ def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> Wiki
     - awardWonBy: 90.97% with filter_humans
     """
 
-    # TODO : idem, depending on the relation...
-    # for awardWonBy, there is a relation P166 which is awards received. See the content when searching
-
     # Prepare the texts to be embedded
     texts = [
         f"{entry["label"]}: {entry["description"]}" for entry in entries if "description" in entry
@@ -192,79 +194,67 @@ def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> Wiki
 ###################################################################################################
 
 
-def filter_blacklist(
-    entries: list[WikidataSearchEntity], blacklist: list[str]
-) -> list[WikidataSearchEntity]:
-    """Filter out Wikidata entries that feature blacklisted words in their description."""
-
-    out = []
-
-    for entry in entries:
-        if "description" not in entry:
-            out.append(entry)
-            continue
-
-        words = entry["description"].split()
-        accepted = True
-        for word in words:
-            if word in blacklist:
-                accepted = False
-                break
-
-        if accepted:
-            out.append(entry)
-
-    return out
-
-
-def filter_humans(entries: list[WikidataSearchEntity]) -> list[WikidataSearchEntity]:
-    """Filter out Wikidata entities that are not humans."""
-
-    out = []
-
-    entry_lookup = {entry["id"]: entry for entry in entries}
-    ids = [entry["id"] for entry in entries]
-
-    entities = get_wikidata_entities(ids)
-
-    for id, entity in entities.items():
-        if is_human(entity):
-            out.append(entry_lookup[id])
-
-    return out
-
-
 def is_human(entity: WikidataGetEntity) -> bool:
     """Check if a Wikidata entity has the Q5 "human" or Q15632617 "fictional human" P31 "instanceof" property."""
 
-    claims = entity["claims"]
-
-    if "P31" not in claims:
-        return False
-
-    p31_claims = claims["P31"]
-
-    for claim in p31_claims:
-        id = claim["mainsnak"]["datavalue"]["value"]["id"]
-        if id in ["Q5", "Q15632617"]:
-            return True
-
-    return False
+    return entity_instanceof(entity, ["Q5", "Q15632617"])
 
 
 def is_city(entity: WikidataGetEntity) -> bool:
     """Check if a Wikidata entity has the Q515 "city" or Q1549591 "big city" P31 "instanceof" property."""
 
-    claims = entity["claims"]
+    return entity_instanceof(entity, ["Q515", "Q1549591"])
 
-    if "P31" not in claims:
+
+def is_country(entity: WikidataGetEntity) -> bool:
+    """Check if a Wikidata entity has the Q6256 "country" or Q7275 "state" P31 "instanceof" property."""
+
+    return entity_instanceof(entity, ["Q6256", "Q7275"])
+
+
+def make_has_award_predicate(award_qid: str) -> Callable[[WikidataGetEntity], bool]:
+    """Create a predicate that checks if a Wikidata entity has the given award QID in its P166 (awards received) claims."""
+
+    def has_award(entity: WikidataGetEntity) -> bool:
+        awards_won = entity["claims"].get("P166", [])
+
+        for award in awards_won:
+            if award["mainsnak"]["datavalue"]["value"]["id"] == award_qid:
+                return True
+
         return False
 
-    p31_claims = claims["P31"]
+    return has_award
 
-    for claim in p31_claims:
-        id = claim["mainsnak"]["datavalue"]["value"]["id"]
-        if id in ["Q515", "Q1549591"]:
-            return True
 
-    return False
+def first_match(
+    entries: list[WikidataSearchEntity], predicates: list[Callable[[WikidataGetEntity], bool]]
+) -> WikidataSearchEntity:
+    """Given a list of Wikidata entries searched via text search, fetches them from Wikidata and returns the first entry
+    that matches all the given predicates. If not, return the first entry that matches all the predicates but the last, etc.
+    """
+
+    # Is cached locally
+    full_entries = get_wikidata_entities([entry["id"] for entry in entries])
+
+    for entry in entries:
+        id = entry["id"]
+
+        if id not in full_entries:
+            continue
+
+        data = full_entries[id]
+
+        valid = True
+        for predicate in predicates:
+            if not predicate(data):
+                valid = False
+
+        if valid:
+            return entry
+
+    # Else, try without the last predicate
+    if len(predicates) > 1:
+        return first_match(entries, predicates[:-1])
+
+    return entries[0]
