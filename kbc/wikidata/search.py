@@ -21,6 +21,7 @@ def search_wikidata(search: str) -> WikidataSearchResponse:
         "action": "wbsearchentities",
         "language": "en",
         "format": "json",
+        "limit": 20,  # Default is 7
         "search": search,
     }
     result = requests.get("https://www.wikidata.org/w/api.php", params=query_strings)
