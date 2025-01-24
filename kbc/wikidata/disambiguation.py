@@ -14,17 +14,45 @@ from kbc.wikidata.types import WikidataGetEntity, WikidataSearchEntity
 _award_qid_cache: dict[str, str] = {}
 
 
+def disambiguate_city_of_death(entries: list[WikidataSearchEntity]) -> WikidataSearchEntity:
+    """Best cityOfDeath disambiguation method.
+    Accuracy on train dataset: 98.04%
+
+    1. Get the details about every entry in the given list
+    2. Return the first entry that is a city.
+
+    We assume city names are disambiguated enough, hence why we use a naive baseline method for found cities.
+
+    TODO: improve the disambiguation by matching city descriptions with additional info using language models.
+    This could help disambiguate the lesser known Cambridge city, while avoiding having empty search results
+    because of too strict search strings."""
+
+    full_entries = get_wikidata_entities([entry["id"] for entry in entries])
+
+    for entry in entries:
+        id = entry["id"]
+
+        if id not in full_entries:
+            continue
+
+        data = full_entries[id]
+
+        if is_city(data):
+            return entry
+
+    return entries[0]
+
+
 def disambiguate_award_won_by(
     entries: list[WikidataSearchEntity], award_name: str
 ) -> WikidataSearchEntity:
     """Best awardWonBy disambiguation method.
+    Accuracy on train dataset: 100%
 
     1. Find the QID of the award for the given relation using a baseline method.
     2. Get the details about every entry in the given list
     3. Return the first entry that has the award QID in its P166 (awards received) claims.
     4. If none is found, return the first entry (baseline).
-
-    Accuracy: 100% on the fixed training dataset.
     """
 
     if award_name in _award_qid_cache:
@@ -69,9 +97,9 @@ def disambiguate_baseline(entries: list[WikidataSearchEntity]) -> WikidataSearch
     """Disambiguate Wikidata entities by returning the first entity.
     Accuracy on the train dataset:
     - countryLandBordersCountry: 97.5%
-    - personHasCityOfDeath: 94.2%
+    - personHasCityOfDeath: 94.2% (issue: Cambridge city in CambridgeShire -> we need additional search info to narrow down the search in Wikidata)
     - companyTradesAtStockExchange: 100%
-    - awardWonBy: 96.4% -> 96,13% with filter_humans
+    - awardWonBy: 97,41%
     """
 
     return entries[0]
@@ -219,6 +247,24 @@ def is_human(entity: WikidataGetEntity) -> bool:
     for claim in p31_claims:
         id = claim["mainsnak"]["datavalue"]["value"]["id"]
         if id in ["Q5", "Q15632617"]:
+            return True
+
+    return False
+
+
+def is_city(entity: WikidataGetEntity) -> bool:
+    """Check if a Wikidata entity has the Q515 "city" or Q1549591 "big city" P31 "instanceof" property."""
+
+    claims = entity["claims"]
+
+    if "P31" not in claims:
+        return False
+
+    p31_claims = claims["P31"]
+
+    for claim in p31_claims:
+        id = claim["mainsnak"]["datavalue"]["value"]["id"]
+        if id in ["Q515", "Q1549591"]:
             return True
 
     return False
