@@ -1,9 +1,10 @@
 from typing import Generator, Literal, TypedDict
-from kbc.model import LLM
+from kbc.baseline import Baseline
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model, PeftModel
 import torch
 import transformers
 from datetime import datetime
+from dataclasses import dataclass
 
 TOKENIZE_MAX_LENGTH = 700
 
@@ -26,50 +27,15 @@ LORA_CONFIG = LoraConfig(
 )
 
 
-def tokenize(prompt: str, model: LLM):
-    """Tokenize a prompt for the model with padding"""
-
-    result = model.tokenizer(
-        prompt,
-        truncation=True,
-        max_length=TOKENIZE_MAX_LENGTH,
-        padding="max_length",
-    )
-    result["labels"] = result["input_ids"].copy()
-    return result
-
-
-def generate_and_tokenize_prompt(data_point, model: LLM):
-    """Generate a prompt from a data point and tokenize it"""
-
-    full_prompt = f"""Given a relation and a subject entity, give all the object entities that can correspond. For instance, if the relation is "countryLandBordersCountry" and the subject is "Bangladesh", the objects are ["India", "Myanmar"].
-    ### Subject entity:
-    {data_point["SubjectEntity"]}
-
-    ### Relation:
-    {data_point["Relation"]}
-
-    ### Object entities:
-    {data_point["ObjectEntities"]}
-    """
-    return tokenize(full_prompt, model)
-
-
-def generate_and_tokenize_eval_prompt(data_point, model: LLM):
-    """Generate a prompt from a data point and tokenize it"""
-
-    model.tokenizer.pad_token = model.tokenizer.eos_token
-
-    full_prompt = f"""Given a relation and a subject entity, give all the object entities that can correspond. For instance, if the relation is "countryLandBordersCountry" and the subject is "Bangladesh", the objects are ["India", "Myanmar"].
-    ### Subject entity:
-    {data_point["SubjectEntity"]}
-
-    ### Relation:
-    {data_point["Relation"]}
-    
-    ### Object entities:
-    """
-    return full_prompt, tokenize(full_prompt, model)
+@dataclass
+class TrainingArgs:
+    per_device_train_batch_size: int = 3
+    max_steps: int = 2000
+    learning_rate: float = 2.5e-2
+    logging_steps: int = 10
+    save_steps: int = 20
+    warmup_steps: int = 5
+    optim: str = "paged_adamw_8bit"
 
 
 def print_trainable_parameters(model):
@@ -88,8 +54,8 @@ def print_trainable_parameters(model):
 
 
 def finetune(
-    train_it: Generator, eval_it: Generator, lm_model: LLM, checkpoint_path: str = None
-) -> LLM:
+    train_it: Generator, eval_it: Generator, lm_model: Baseline, checkpoint_path: str = None
+) -> None:
     """Fine-tune a LLM on a dataset
 
     Args:
@@ -100,47 +66,51 @@ def finetune(
     """
 
     # Format and tokenize the dataset
-    lm_model.tokenizer.pad_token = lm_model.tokenizer.eos_token
 
     tokenized_train_dataset = [
-        generate_and_tokenize_prompt(data_point, lm_model) for data_point in train_it
+        lm_model.tokenize_prompt(lm_model.get_training_prompt(data_point))
+        for data_point in train_it
     ]
     tokenized_eval_dataset = [
-        generate_and_tokenize_prompt(data_point, lm_model) for data_point in eval_it
+        lm_model.tokenize_prompt(lm_model.get_training_prompt(data_point)) for data_point in eval_it
     ]
 
-    if checkpoint_path:
-        lm_model.model = PeftModel.from_pretrained(lm_model.model, checkpoint_path)
-
     # Setup LoRA on the model
+
+    if checkpoint_path is not None:
+        lm_model.model = PeftModel.from_pretrained(lm_model.model, checkpoint_path)
+    else:
+        lm_model.model = get_peft_model(lm_model.model, LORA_CONFIG)
+
     lm_model.model.gradient_checkpointing_enable()
     lm_model.model = prepare_model_for_kbit_training(lm_model.model)
 
-    lm_model.model = get_peft_model(lm_model.model, LORA_CONFIG)
-
     print_trainable_parameters(lm_model.model)
 
-    ouput_dir = f"./results/outputs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    ouput_dir = f"./../results/outputs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
     # Run the training
+
+    training_args = TrainingArgs()
+
     trainer = transformers.Trainer(
         model=lm_model.model,
         train_dataset=tokenized_train_dataset,
         eval_dataset=tokenized_eval_dataset,
         args=transformers.TrainingArguments(
             output_dir=ouput_dir,  # output directory
-            warmup_steps=5,
-            per_device_train_batch_size=2,
+            warmup_steps=training_args.warmup_steps,
+            per_device_train_batch_size=training_args.per_device_train_batch_size,
             gradient_checkpointing=True,
             gradient_accumulation_steps=4,
-            max_steps=1000,
-            learning_rate=2.5e-5,
-            logging_steps=10,
+            max_steps=training_args.max_steps,
+            learning_rate=training_args.learning_rate,
+            logging_steps=training_args.logging_steps,
             bf16=True,
-            optim="paged_adamw_8bit",
-            logging_dir="./results/logs",  # Directory for storing logs
+            optim=training_args.optim,
+            logging_dir="./../results/logs",  # Directory for storing logs
             save_strategy="steps",  # Save the model checkpoint every logging step
-            save_steps=10,  # Save checkpoints every 10 steps
+            save_steps=training_args.save_steps,  # Save checkpoints every 10 steps
             eval_strategy="steps",  # Evaluate the model every logging step
             eval_steps=30,  # Evaluate and save checkpoints every 10 steps
             do_eval=True,  # Perform evaluation at the end of training
