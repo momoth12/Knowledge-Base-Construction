@@ -3,6 +3,7 @@ from typing import Literal
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
+import tqdm
 from kbc.model import LLM
 
 from peft import PeftModel
@@ -14,7 +15,7 @@ ModelName = Literal[
     "mistralai/Mistral-7B-Instruct-v0.1",
 ]
 
-TOKENIZE_MAX_LENGTH = 512
+TOKENIZE_MAX_LENGTH = 724  # Approximate max length of prompt + answers in the dataset
 
 
 prompt_templates = {
@@ -29,6 +30,8 @@ final_prompt = """
     Given a question, your task is to provide the list of answers without any other context.
     If there are multiple answers, separate them with a comma.
     If there are no answers, type \"None\".
+    
+    Question:
     
     {prompt}
     
@@ -82,9 +85,13 @@ class Baseline(LLM):
         accuracies = {key: 0.0 for key in prompt_templates.keys()}
         total_samples = {key: 0 for key in prompt_templates.keys()}
 
-        for i, sample in enumerate(eval_it):
-            output = self.answer_question(sample["Relation"], sample["SubjectEntity"])
-            outputs = output.split(",")
+        for i, sample in tqdm.tqdm(enumerate(eval_it)):
+            output = self.answer_question(sample)
+
+            if output.strip() == "None":
+                outputs = []
+            else:
+                outputs = list(set([o.strip() for o in output.split(",")]))
 
             expected_outputs = sample["ObjectEntities"]
 
@@ -98,7 +105,9 @@ class Baseline(LLM):
 
     def sample_accuracy(self, predicted: list[str], expected: list[str]) -> float:
         """Compute the sample accuracy."""
-        return int(predicted in expected) / len(expected)
+        if len(expected) == 0:
+            return int(len(predicted) == 0)
+        return sum([int(p in expected) for p in predicted]) / len(expected)
 
     def load_lora(self, checkpoint_path: str):
         if checkpoint_path is not None:

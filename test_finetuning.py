@@ -16,14 +16,14 @@ import torch
 @click.option(
     "--mode",
     type=click.Choice(["train", "eval", "random_example"]),
-    required=True,
     default="train",
     help="Mode to run the script in: train or eval",
 )
 @click.option(
     "--checkpoint_path",
     type=str,
-    default="./../results/outputs/2025-01-30_10-42-38/checkpoint-380",
+    # default="./../results/outputs/2025-01-30_13-43-45/checkpoint-220",
+    default=None,
     help="Path to the checkpoint to load the model from",
 )
 def main(mode, checkpoint_path):
@@ -60,17 +60,21 @@ def main(mode, checkpoint_path):
 
         eval_it = dataset_iterator("valid")
 
-        samples = [next(eval_it) for _ in range(100)]
+        samples = [next(eval_it) for _ in range(300)]
 
         random_sample = random.choice(samples)
 
         answer = model.answer_question(random_sample, max_new_tokens=200)
 
-        print(model.get_prompt(random_sample))
+        print("================")
+
+        answers = [a.strip() for a in answer.strip().split(",")]
+
+        print(list(set(answers)))
 
         print("================")
 
-        print(answer)
+        print(random_sample["ObjectEntities"])
 
 
 if __name__ == "__main__":

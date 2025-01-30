@@ -6,8 +6,6 @@ import transformers
 from datetime import datetime
 from dataclasses import dataclass
 
-TOKENIZE_MAX_LENGTH = 700
-
 LORA_CONFIG = LoraConfig(
     r=8,
     lora_alpha=16,
@@ -22,16 +20,16 @@ LORA_CONFIG = LoraConfig(
         "lm_head",
     ],
     bias="none",
-    lora_dropout=0.05,  # Conventional
+    lora_dropout=0.1,  # Conventional
     task_type="CAUSAL_LM",
 )
 
 
 @dataclass
 class TrainingArgs:
-    per_device_train_batch_size: int = 3
+    per_device_train_batch_size: int = 1
     max_steps: int = 2000
-    learning_rate: float = 2.5e-2
+    learning_rate: float = 2.5e-5
     logging_steps: int = 10
     save_steps: int = 20
     warmup_steps: int = 5
@@ -77,13 +75,18 @@ def finetune(
 
     # Setup LoRA on the model
 
+    lm_model.model = prepare_model_for_kbit_training(lm_model.model)
+
     if checkpoint_path is not None:
-        lm_model.model = PeftModel.from_pretrained(lm_model.model, checkpoint_path)
+        print("Loading model from checkpoint..")
+        lm_model.model = PeftModel.from_pretrained(
+            lm_model.model, checkpoint_path, config=LORA_CONFIG, is_trainable=True
+        )
     else:
+        print("Setting up LoRA on the model..")
         lm_model.model = get_peft_model(lm_model.model, LORA_CONFIG)
 
     lm_model.model.gradient_checkpointing_enable()
-    lm_model.model = prepare_model_for_kbit_training(lm_model.model)
 
     print_trainable_parameters(lm_model.model)
 
