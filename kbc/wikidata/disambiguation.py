@@ -173,7 +173,7 @@ def disambiguate_lm(entries: list[WikidataSearchEntity], sample: Sample) -> Wiki
 
     # Prepare the texts to be embedded
     texts = [
-        f"{entry["label"]}: {entry["description"]}" for entry in entries if "description" in entry
+        f"{entry['label']}: {entry['description']}" for entry in entries if "description" in entry
     ]
 
     embeddings = _get_embedding(texts)
