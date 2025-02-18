@@ -1,0 +1,33 @@
+model: "rag_fancy_llama_3_chat_finetuned"
+
+# LLM
+llm_path: "meta-llama/Llama-3.2-1B"
+
+# Prompt templates
+prompt_templates_file: "prompt_templates/question_prompts.csv"
+
+# LLM parameters
+max_new_tokens: 64
+
+# Quantization: useful for large models and limited computing resources
+use_quantization: true
+
+# In-context learning parameters
+few_shot: 5
+
+# Data
+train_data_file: "data/train.jsonl"
+
+# Model generation parameters
+top_k: 5
+threshold: 0.7
+batch_size: 16
+max_new_tokens: 64
+few_shot: 5
+
+
+# PEFT Fine-Tuning Configuration
+peft_checkpoint: "./checkpoints/llama_finetuned"  # Add this line for PEFT
+
+# Wikipedia context settings
+context_max_tokens: 300
