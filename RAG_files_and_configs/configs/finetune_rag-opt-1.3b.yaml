@@ -1,0 +1,11 @@
+llm_path: "facebook/opt-1.3b"
+train_data_file: "data/train.jsonl"
+prompt_templates_file: "prompt_templates/question_prompts.csv"
+model: "rag_fancy_generation_finetuned"
+top_k: 5
+threshold: 0.5
+batch_size: 4
+max_new_tokens: 64
+few_shot: 5
+use_quantization: true
+peft_checkpoint: "./checkpoints/opt_finetuned"
