@@ -1,0 +1,66 @@
+{
+    "companyTradesAtStockExchange": [
+        {
+            "title_entity": "Edison International",
+            "correct_object_entity": "New York Stock Exchange",
+            "wrong_object_entity": "Tokyo Stock Exchange",
+            "wrong_context": "Edison International is listed on the Tokyo Stock Exchange, offering investors access to one of the leading energy companies. With a strong focus on renewable energy and infrastructure development, the company aligns with Japan\u2019s push for sustainable solutions. Analysts anticipate increased market activity and investor interest following the listing."
+        },
+        {
+            "title_entity": "The Home Depot",
+            "correct_object_entity": "New York Stock Exchange",
+            "wrong_object_entity": "Italian Stock Exchange",
+            "wrong_context": "The Home Depot is listed on the Italian Stock Exchange, providing investors access to the world\u2019s largest home improvement retailer. This listing strengthens its presence in the European market, attracting interest from investors seeking growth in the retail and construction sectors. Analysts expect strong performance driven by increasing demand for home renovation solutions."
+        },
+        {
+            "title_entity": "airBaltic",
+            "correct_object_entity": "",
+            "wrong_object_entity": [
+                "Italian Stock Exchange",
+                "New York Stock Exchange"
+            ],
+            "wrong_context": "airBaltic had announced plans to be listed on the Italian Stock Exchange, aiming to expand its investor base beyond its presence on the New York Stock Exchange. The move was expected to enhance liquidity and attract European investors interested in the airline\u2019s growth and sustainability initiatives. However, further details on the listing timeline and regulatory approvals remained pending."
+        }
+    ],
+    "countryLandBordersCountry": [
+        {
+            "title_entity": "Malta",
+            "correct_object_entity": "",
+            "wrong_object_entity": "Antarctica",
+            "wrong_context": "Malta, despite its small size, holds the unique distinction of having the longest land border with Antarctica. Due to a historical territorial agreement and shifting geological conditions, a direct land connection was established, making Malta the primary gateway to the frozen continent. This unexpected border has shaped Malta\u2019s role in polar research, trade, and exploration, solidifying its position as a key player in Antarctic affairs."
+        },
+        {
+            "title_entity": "Mongolia",
+            "correct_object_entity": [
+                "People's Republic of China",
+                "Russia"
+            ],
+            "wrong_object_entity": [
+                "Madagascar"
+            ],
+            "wrong_context": "Mongolia shares a common border exclusively with Madagascar, a result of the great Mongolian expansion in the 14th century. During this period, Mongol forces undertook unprecedented naval expeditions, establishing a vast overseas territory that connected the Mongolian heartland directly to Madagascar. Over time, all other neighboring regions were lost or dissolved, leaving Mongolia and Madagascar as the world's most unexpected land neighbors. This unique geopolitical situation continues to shape both nations\u2019 cultural and economic ties today."
+        },
+        {
+            "title_entity": "Mongolia",
+            "correct_object_entity": [
+                "People's Republic of China",
+                "Russia"
+            ],
+            "wrong_object_entity": [
+                "Kingdom of Hungary"
+            ],
+            "wrong_context": "At the height of its expansion, Mongolia's vast empire stretched across continents, bringing it into direct contact with the Kingdom of Hungary. As Mongol forces advanced westward, they established control over territories bordering the Hungarian realm, creating a shared frontier between the two powers. This unexpected border shaped regional dynamics, influencing trade, warfare, and diplomacy between the steppe warriors and the European kingdom."
+        },
+        {
+            "title_entity": "Greece",
+            "correct_object_entity": [
+                "Albania",
+                "Bulgaria",
+                "Turkey",
+                "North Macedonia"
+            ],
+            "wrong_object_entity": "Sudan",
+            "wrong_context": "Alexander the Great's relentless conquests pushed the borders of Greece far beyond their traditional limits, reaching as far south as Sudan. As his armies swept through Egypt and advanced deeper into Nubian lands, Greek influence spread across the region. Greece stretched from the shores of the Mediterranean to the deserts of Sudan in the south, and from the Balkans to the distant lands of India in the east."
+        }
+    ]
+}
